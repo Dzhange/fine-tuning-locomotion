@@ -27,6 +27,8 @@ from motion_imitation.robots import robot_config
 from motion_imitation.envs.sensors import sensor
 from motion_imitation.envs.sensors import space_utils
 
+from scipy.spatial.transform import Rotation as R
+
 _ACTION_EPS = 0.01
 _NUM_SIMULATION_ITERATION_STEPS = 300
 _LOG_BUFFER_LENGTH = 5000
@@ -352,6 +354,10 @@ class LocomotionGymEnv(gym.Env):
       if (delay>0):
         time.sleep(delay)
 
+    imgs = self.render_head()
+    # print(imgs, type(imgs))
+
+
     for env_randomizer in self._env_randomizers:
       env_randomizer.randomize_step(self)
 
@@ -397,6 +403,56 @@ class LocomotionGymEnv(gym.Env):
     rgb_array = np.array(px)
     rgb_array = rgb_array[:, :, :3]
     return rgb_array
+
+  def render_head(self, mode="rgb_array"):
+    """
+    Take image from the robot's perspective
+    """
+    base_pos = self._robot.GetBasePosition()
+    base_orient = self._robot.GetBaseOrientation()
+    # neck_vec = np.array([0.2, 0, 0.01])
+    # neck_vec = np.array([0.3, 0, 0.01])
+    neck_vec = np.array([0.1, 0, -0.1])
+    # gase_dir = np.array([-0.1, 0, 0])
+    r = R.from_quat(base_orient)
+    neck_vec = r.apply(neck_vec)
+    # gase_dir = r.apply(gase_dir)
+
+    head_position = base_pos + neck_vec
+    # gase_position = head_position + gase_dir
+
+    view_matrix = self._pybullet_client.computeViewMatrixFromYawPitchRoll(
+        cameraTargetPosition=head_position,
+        distance=self._camera_dist*0.1,
+        yaw=-90,
+        pitch=-45,
+        roll=0,
+        upAxisIndex=2)
+
+    proj_matrix = self._pybullet_client.computeProjectionMatrixFOV(fov=60,
+                                                                    aspect=float(self._render_width) / self._render_height,
+                                                                    nearVal=0.1,
+                                                                    farVal=100.0)
+    
+    (_, _, px, dp, _) = self._pybullet_client.getCameraImage(
+        width=self._render_width,
+        height=self._render_height,
+        renderer=self._pybullet_client.ER_BULLET_HARDWARE_OPENGL,
+        viewMatrix=view_matrix,
+        projectionMatrix=proj_matrix)
+
+    
+    rgb_array = np.array(px)
+    rgb_array = rgb_array[:, :, :3]
+    depth_array = np.array(dp)
+    
+    if mode == "rgb_array":
+        return rgb_array
+    elif mode == "rgb_depth":
+        return rgb_array, depth_array
+    else:
+        return np.array([])
+
 
   def get_ground(self):
     """Get simulation ground model."""
