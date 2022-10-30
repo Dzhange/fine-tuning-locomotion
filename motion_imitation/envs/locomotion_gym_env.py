@@ -27,6 +27,7 @@ from motion_imitation.robots import robot_config
 from motion_imitation.envs.sensors import sensor
 from motion_imitation.envs.sensors import space_utils
 
+from motion_imitation.envs.scenes import stepstone_terrain
 from scipy.spatial.transform import Rotation as R
 
 _ACTION_EPS = 0.01
@@ -89,6 +90,9 @@ class LocomotionGymEnv(gym.Env):
     if isinstance(self._task, sensor.Sensor):
       self._sensors.append(self._task)
 
+    self._obstacles = False
+    # self._obstacles = True
+
     # Simulation related parameters.
     self._num_action_repeat = gym_config.simulation_parameters.num_action_repeat
     self._on_rack = gym_config.simulation_parameters.robot_on_rack
@@ -112,10 +116,10 @@ class LocomotionGymEnv(gym.Env):
       pybullet.configureDebugVisualizer(
           pybullet.COV_ENABLE_GUI,
           gym_config.simulation_parameters.enable_rendering_gui)
-      if hasattr(self._task, '_draw_ref_model_alpha'):
+      if hasattr(self._task, '_draw_ref_model_alpha'):                
         self._show_reference_id = pybullet.addUserDebugParameter("show reference",0,1,
           self._task._draw_ref_model_alpha)
-      self._delay_id = pybullet.addUserDebugParameter("delay",0,0.3,0)
+      self._delay_id = pybullet.addUserDebugParameter("delay",0,0.3,0)      
     else:
       self._pybullet_client = bullet_client.BulletClient(
           connection_mode=pybullet.DIRECT)
@@ -133,7 +137,12 @@ class LocomotionGymEnv(gym.Env):
     self._render_width = gym_config.simulation_parameters.render_width
     self._render_height = gym_config.simulation_parameters.render_height
 
-    self._hard_reset = True
+    # Generate terrain.
+    if self._obstacles:
+      self.terrain = stepstone_terrain.RandomStepstoneScene()
+      self.terrain.build_scene(self._pybullet_client)
+    
+    self._hard_reset = True 
     self.reset()
 
     self._hard_reset = gym_config.simulation_parameters.enable_hard_reset
@@ -225,11 +234,16 @@ class LocomotionGymEnv(gym.Env):
           numSolverIterations=self._num_bullet_solver_iterations)
       self._pybullet_client.setTimeStep(self._sim_time_step)
       self._pybullet_client.setGravity(0, 0, -10)
-
-      # Rebuild the world.
-      self._world_dict = {
+      if self._obstacles:
+        self.terrain.reset()
+        # Rebuild the world.
+        self._world_dict = {          
+            "ground": self.terrain.floor_id
+        }
+      else:
+        self._world_dict = {
           "ground": self._pybullet_client.loadURDF("plane_implicit.urdf")
-      }
+        }
 
       # Rebuild the robot
       self._robot = self._robot_class(
@@ -340,7 +354,8 @@ class LocomotionGymEnv(gym.Env):
                                                        base_pos)
       self._pybullet_client.configureDebugVisualizer(
           self._pybullet_client.COV_ENABLE_SINGLE_STEP_RENDERING, 1)
-      alpha = 0.5
+      # alpha = 0.5
+      alpha = 0
       if self._show_reference_id>0:
         alpha = self._pybullet_client.readUserDebugParameter(self._show_reference_id)
 
@@ -354,8 +369,8 @@ class LocomotionGymEnv(gym.Env):
       if (delay>0):
         time.sleep(delay)
 
-    imgs = self.render_head()
-    # print(imgs, type(imgs))
+    # imgs = self.render_head()
+    imgs = self.render_foot()
 
 
     for env_randomizer in self._env_randomizers:
@@ -423,7 +438,7 @@ class LocomotionGymEnv(gym.Env):
 
     view_matrix = self._pybullet_client.computeViewMatrixFromYawPitchRoll(
         cameraTargetPosition=head_position,
-        distance=self._camera_dist*0.1,
+        distance=0.02,
         yaw=-90,
         pitch=-45,
         roll=0,
@@ -453,6 +468,46 @@ class LocomotionGymEnv(gym.Env):
     else:
         return np.array([])
 
+  def render_foot(self, foot_id=0, mode='rgb_array'):
+    
+    base_pos = self._robot.GetBasePosition()    
+
+    feet_positions = self._robot.GetFootPositionsInBaseFrame()
+    foot_position = base_pos + feet_positions[0]
+
+    gase_position = base_pos + feet_positions[0] * 1.2
+
+    view_matrix = self._pybullet_client.computeViewMatrixFromYawPitchRoll(
+        cameraTargetPosition=gase_position,
+        distance=self._camera_dist*0.1,
+        yaw=-90,
+        pitch=-45,
+        roll=0,
+        upAxisIndex=2)
+
+    proj_matrix = self._pybullet_client.computeProjectionMatrixFOV(fov=60,
+                                                                    aspect=float(self._render_width) / self._render_height,
+                                                                    nearVal=0.1,
+                                                                    farVal=100.0)    
+        
+    (_, _, px, dp, _) = self._pybullet_client.getCameraImage(
+        width=self._render_width,
+        height=self._render_height,
+        renderer=self._pybullet_client.ER_BULLET_HARDWARE_OPENGL,
+        viewMatrix=view_matrix,
+        projectionMatrix=proj_matrix)
+
+    
+    rgb_array = np.array(px)
+    rgb_array = rgb_array[:, :, :3]
+    depth_array = np.array(dp)
+    
+    if mode == "rgb_array":
+        return rgb_array
+    elif mode == "rgb_depth":
+        return rgb_array, depth_array
+    else:
+        return np.array([])
 
   def get_ground(self):
     """Get simulation ground model."""
@@ -478,11 +533,11 @@ class LocomotionGymEnv(gym.Env):
   def world_dict(self, new_dict):
     self._world_dict = new_dict.copy()
 
-  def _termination(self):
-    if not self._robot.is_safe:
+  def _termination(self):    
+    if not self._robot.is_safe:      
       return True
 
-    if self._task and hasattr(self._task, 'done'):
+    if self._task and hasattr(self._task, 'done'):      
       return self._task.done(self)
 
     for s in self.all_sensors():

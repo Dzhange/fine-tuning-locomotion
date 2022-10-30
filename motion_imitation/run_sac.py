@@ -70,7 +70,8 @@ def enable_gpus(gpu_str):
 
 def build_agent(env, variant, agent_cls=sac_agent.SACAgent):
     graph = tf.Graph()
-    sess = tf.Session(graph=graph, config=tf.ConfigProto(log_device_placement=True))
+    # sess = tf.Session(graph=graph, config=tf.ConfigProto(log_device_placement=True))
+    sess = tf.Session(graph=graph)
     agent = agent_cls(env=env, sess=sess, **variant)
 
     return agent

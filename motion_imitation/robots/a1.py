@@ -94,7 +94,8 @@ LOWER_NAME_PATTERN = re.compile(r"\w+_lower_\w+")
 TOE_NAME_PATTERN = re.compile(r"\w+_toe\d*")
 IMU_NAME_PATTERN = re.compile(r"imu\d*")
 
-URDF_FILENAME = os.path.join(parentdir, "motion_imitation/utilities/a1/a1.urdf")
+# URDF_FILENAME = os.path.join(parentdir, "motion_imitation/utilities/a1/a1.urdf")
+URDF_FILENAME = os.path.join(parentdir, "motion_imitation/utilities/a1/a1_tactile.urdf")
 
 _BODY_B_FIELD_NUMBER = 2
 _LINK_A_FIELD_NUMBER = 3
@@ -242,7 +243,8 @@ class A1(minitaur.Minitaur):
                                         lower_bound=-2.69653369433),
   ]
   INIT_RACK_POSITION = [0, 0, 1]
-  INIT_POSITION = [0, 0, 0.25870023]
+  # INIT_POSITION = [0, 0, 0.25870023]
+  INIT_POSITION = [0, 0, 0.3]
   INIT_ORIENTATION = (0, 0, 0, 1)
   # Joint angles are allowed to be JOINT_EPSILON outside their nominal range.
   # This accounts for imprecision seen in either pybullet's enforcement of joint
@@ -456,6 +458,7 @@ class A1(minitaur.Minitaur):
         self._lower_link_ids.append(joint_id)
       elif TOE_NAME_PATTERN.match(joint_name):
         #assert self._urdf_filename == URDF_WITH_TOES
+        self._pybullet_client.changeVisualShape(self.quadruped, joint_id, rgbaColor=[1, 1, 1, 0])
         self._foot_link_ids.append(joint_id)
       elif IMU_NAME_PATTERN.match(joint_name):
         self._imu_link_ids.append(joint_id)
