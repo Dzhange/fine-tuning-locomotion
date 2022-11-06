@@ -8,6 +8,14 @@ import numpy as np
 import pybullet
 from pybullet_utils import bullet_client
 
+import os
+import inspect
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(os.path.dirname(currentdir))
+os.sys.path.insert(0, parentdir)
+
+
+
 GRAY = (0.3, 0.3, 0.3, 1)
 # RGB values from the official Google logo colors.
 GREEN = [60/255, 186/255, 84/255, 1]
@@ -79,13 +87,21 @@ def build_one_stepstone(
   half_length = stone_length / 2.0
   half_width = stone_width / 2.0
   half_height = stone_height / 2.0
-  start_pos = np.asarray(start_pos) + np.array([gap_length, 0, height_offset])
+  start_pos = np.asarray(start_pos) + np.array([gap_length, 0, height_offset])  
   step_stone_id = load_box(pybullet_client,
       half_extents=[half_length, half_width, half_height],
       position=start_pos + np.array([half_length, 0, -half_height]),
       orientation=(0, 0, 0, 1),
-      rgba_color=rgba_color,
+      # rgba_color=rgba_color,
+      rgba_color=[1, 1, 1, 1],
       mass=0)
+
+
+  # check_board_path = os.path.join(parentdir, "utilities/check_board_thin.png")
+  check_board_path = os.path.join(parentdir, "utilities/zebra.png")
+  check_board_id = pybullet_client.loadTexture(check_board_path)
+  pybullet_client.changeVisualShape(step_stone_id, -1, textureUniqueId=check_board_id)
+
   end_pos = start_pos + np.array([stone_length, 0, 0])
   return end_pos, step_stone_id
 
@@ -123,7 +139,7 @@ def build_stepstones(
     The pybullet ids of the stepstones.
   """
   end_pos = start_pos
-  ids = []
+  ids = []  
   for _, color in zip(range(num_stones), itertools.cycle(color_sequence)):
     end_pos, step_stone_id = build_one_stepstone(
         pybullet_client=pybullet_client,
@@ -189,7 +205,8 @@ def build_random_stepstones(
   end_pos = start_pos
   ids = []
   random_generator = random.Random()
-  random_generator.seed(random_seed)
+  random_generator.seed(random_seed)  
+
   for _, color in zip(range(num_stones), itertools.cycle(color_sequence)):
     stone_length = random_generator.uniform(stone_length_lower_bound,
                                             stone_length_upper_bound)

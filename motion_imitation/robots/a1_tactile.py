@@ -94,7 +94,7 @@ LOWER_NAME_PATTERN = re.compile(r"\w+_lower_\w+")
 TOE_NAME_PATTERN = re.compile(r"\w+_toe\d*")
 IMU_NAME_PATTERN = re.compile(r"imu\d*")
 
-URDF_FILENAME = os.path.join(parentdir, "motion_imitation/utilities/a1/a1.urdf")
+URDF_FILENAME = os.path.join(parentdir, "motion_imitation/utilities/a1/a1_tactile.urdf")
 
 _BODY_B_FIELD_NUMBER = 2
 _LINK_A_FIELD_NUMBER = 3
@@ -684,13 +684,16 @@ class A1(minitaur.Minitaur):
     # as the angles.
     return joint_position_idxs, joint_angles.tolist()
 
-  def GetFootPositionsInBaseFrame(self):
+  def GetFootOrientation(self):
     """Get the robot's foot position in the base frame."""
     motor_angles = self.GetMotorAngles()
     return foot_positions_in_base_frame(motor_angles)
+
 
   def ComputeJacobian(self, leg_id):
     """Compute the Jacobian for a given leg."""
     # Does not work for Minitaur which has the four bar mechanism for now.
     motor_angles = self.GetMotorAngles()[leg_id * 3:(leg_id + 1) * 3]
     return analytical_leg_jacobian(motor_angles, leg_id)
+
+

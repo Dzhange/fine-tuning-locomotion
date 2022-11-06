@@ -34,6 +34,7 @@ from motion_imitation.envs.sensors import robot_sensors
 from motion_imitation.envs.sensors import sensor_wrappers
 from motion_imitation.envs.utilities import controllable_env_randomizer_from_config
 from motion_imitation.robots import a1
+from motion_imitation.robots import a1_tactile
 from motion_imitation.robots import a1_robot
 from motion_imitation.robots import robot_config
 
@@ -70,7 +71,7 @@ def build_env(task,
   if use_real_robot:
     robot_class = a1_robot.A1Robot
   else:
-    robot_class = a1.A1
+    robot_class = a1_tactile.A1
 
   if use_real_robot or realistic_sim:
     robot_kwargs["reset_func_name"] = "_SafeJointsReset"

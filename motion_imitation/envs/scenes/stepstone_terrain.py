@@ -7,6 +7,7 @@ import numpy as np
 from motion_imitation.envs.scenes import stepstones
 from pybullet_utils import bullet_client
 
+
 class ObjectType(enum.Enum):
   """Categories of objects that may be found in a scene."""
   OTHER = 0
@@ -20,9 +21,9 @@ class RandomStepstoneScene(object):
   
       self,
       num_stones: int = 10,
-      stone_height: float = 0.1, 
-      stone_width_lower_bound: float = 10.0,
-      stone_width_upper_bound: float = 10.0,
+      stone_height: float = 0.05,
+      stone_width_lower_bound: float = 2.0,
+      stone_width_upper_bound: float = 3.0,
       stone_length_lower_bound: float = 0.1,
       stone_length_upper_bound: float = 0.3,
       gap_length_lower_bound: float = 0.1,
@@ -96,13 +97,14 @@ class RandomStepstoneScene(object):
     self._color_sequence = color_sequence
     self._rebuild_scene_during_reset = rebuild_scene_during_reset
 
-  def reset(self):
+  def reset(self, env):
     # super().reset()
 
     if self._rebuild_scene_during_reset:
       # for ground_id in self.ground_ids:
       #   self._pybullet_client.removeBody(ground_id)
       self.build_scene(self._pybullet_client)
+    env.set_ground(self.floor_id)
 
   def build_scene(self, pybullet_client):
     # super().build_scene(pybullet_client)

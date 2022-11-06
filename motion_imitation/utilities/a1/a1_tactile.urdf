@@ -750,7 +750,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <sphere radius="0.025"/>
+        <sphere radius="0.04"/>
       </geometry>
     </collision>
     <inertial>
@@ -793,7 +793,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <sphere radius="0.025"/>
+        <sphere radius="0.04"/>
       </geometry>
     </collision>
     <inertial>
@@ -834,7 +834,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <sphere radius="0.025"/>
+        <sphere radius="0.04"/>
       </geometry>
     </collision>
     <inertial>
@@ -875,7 +875,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <sphere radius="0.05"/>
+        <sphere radius="0.04"/>
       </geometry>
     </collision>
     <inertial>
